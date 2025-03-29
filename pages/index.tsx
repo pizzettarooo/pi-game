@@ -46,7 +46,7 @@ export default function Home() {
 
     try {
       const scopes = ['username', 'payments', 'wallet_address']
-      const onIncompletePaymentFound = (payment) => {
+      const onIncompletePaymentFound = (payment: any) => {
         console.log('💰 Pagamento incompleto trovato:', payment)
       }
 
