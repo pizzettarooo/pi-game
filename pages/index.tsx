@@ -24,8 +24,12 @@ export default function Home() {
     const initPiSdk = async () => {
       if (window.Pi && window.Pi.init) {
         try {
-          await window.Pi.init({ sandbox: true })
-          console.log('✅ Pi SDK inizializzato con successo')
+          await window.Pi.init({
+            version: "2.0",
+            sandbox: true,
+            appId: "test-accdbdb15ea84aac"
+          })
+                    console.log('✅ Pi SDK inizializzato con successo')
           setSdkReady(true)
         } catch (err) {
           console.error('❌ Errore durante init:', err)
