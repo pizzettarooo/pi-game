@@ -5,28 +5,34 @@ export default function Home() {
   const [user, setUser] = useState<{ username: string; wallet_address: string } | null>(null)
 
   useEffect(() => {
-    const loadPiSdk = async () => {
+    const initPiSdk = async () => {
+      if (window.Pi && window.Pi.init) {
+        try {
+          await window.Pi.init({
+            version: '2.0',
+            sandbox: true,
+            appId: 'test-accdbdb15ea84aac',
+          })
+          console.log('✅ Pi SDK inizializzato')
+          setSdkReady(true)
+        } catch (err) {
+          console.error('❌ Errore init Pi SDK:', err)
+        }
+      } else {
+        console.warn('❌ Pi SDK non disponibile in window')
+      }
+    }
+
+    const loadPiSdk = () => {
       if (!document.getElementById('pi-sdk')) {
         const script = document.createElement('script')
         script.src = 'https://sdk.minepi.com/pi-sdk.js'
         script.id = 'pi-sdk'
         script.async = true
-        script.onload = async () => {
-          try {
-            await window.Pi.init({
-              version: '2.0',
-              sandbox: true,
-              appId: 'test-accdbdb15ea84aac'
-            })
-            console.log('✅ Pi SDK inizializzato con successo')
-            setSdkReady(true)
-          } catch (err) {
-            console.error('❌ Errore init:', err)
-          }
-        }
+        script.onload = initPiSdk
         document.body.appendChild(script)
       } else {
-        setSdkReady(true)
+        initPiSdk()
       }
     }
 
@@ -34,7 +40,10 @@ export default function Home() {
   }, [])
 
   const handleLogin = async () => {
-    if (!sdkReady) return alert('⏳ Pi SDK non pronto!')
+    if (!sdkReady) {
+      alert('⏳ Pi SDK non pronto ancora...')
+      return
+    }
 
     try {
       const scopes = ['username', 'payments', 'wallet_address']
@@ -43,8 +52,12 @@ export default function Home() {
         console.log('💰 Pagamento incompleto:', payment)
       })
 
-      console.log('✅ Login OK:', auth)
-      setUser(auth.user)
+      if (auth && auth.user) {
+        setUser(auth.user)
+        console.log('✅ Login completato:', auth)
+      } else {
+        console.error('❌ Login fallito o utente null')
+      }
     } catch (err) {
       console.error('❌ Errore login:', err)
     }
@@ -74,7 +87,7 @@ export default function Home() {
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
-          console.error("❌ Errore pagamento:", error)
+          console.error("❌ Errore:", error)
         }
       })
     } catch (err) {
