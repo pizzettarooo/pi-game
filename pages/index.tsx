@@ -26,7 +26,6 @@ export default function Home() {
         try {
           await window.Pi.init({
             version: "2.0",
-            sandbox: true,
             appId: "test-accdbdb15ea84aac"
           })
           console.log('✅ Pi SDK inizializzato con successo')
