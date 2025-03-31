@@ -83,6 +83,7 @@ export default function Home() {
         console.warn("🔴 Pagamento annullato:", paymentId)
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const onError = (error: any) => {
         console.error("❌ Errore pagamento:", error)
       }
@@ -95,7 +96,6 @@ export default function Home() {
       })
 
     } catch (err) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       console.error("❌ Errore createPayment:", err)
     }
   }
