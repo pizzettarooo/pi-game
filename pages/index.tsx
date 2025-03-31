@@ -1,73 +1,133 @@
 import React, { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
 
-export default function LoginPage() {
+export default function Home() {
   const [sdkReady, setSdkReady] = useState(false)
-  const router = useRouter()
+  const [user, setUser] = useState<{ username: string; wallet_address: string } | null>(null)
 
   useEffect(() => {
     const loadPiSdk = async () => {
-      const script = document.createElement('script')
-      script.src = 'https://sdk.minepi.com/pi-sdk.js'
-      script.id = 'pi-sdk'
-      script.async = true
-      script.onload = async () => {
-        console.log('✅ Pi SDK caricato')
-        await window.Pi.init({
-          version: "2.0",
-          sandbox: true,
-          appId: "test-accdbdb15ea84aac"
-        })
-        console.log('✅ Pi SDK inizializzato con successo')
+      if (!document.getElementById('pi-sdk')) {
+        const script = document.createElement('script')
+        script.src = 'https://sdk.minepi.com/pi-sdk.js'
+        script.id = 'pi-sdk'
+        script.async = true
+        script.onload = async () => {
+          try {
+            await window.Pi.init({
+              version: '2.0',
+              sandbox: true,
+              appId: 'test-accdbdb15ea84aac'
+            })
+            console.log('✅ Pi SDK inizializzato con successo')
+            setSdkReady(true)
+          } catch (err) {
+            console.error('❌ Errore init:', err)
+          }
+        }
+        document.body.appendChild(script)
+      } else {
         setSdkReady(true)
       }
-      document.body.appendChild(script)
     }
 
-    if (!window.Pi) loadPiSdk()
-    else setSdkReady(true)
+    loadPiSdk()
   }, [])
 
   const handleLogin = async () => {
-    if (!sdkReady) return alert("⏳ Pi SDK non pronto!")
+    if (!sdkReady) return alert('⏳ Pi SDK non pronto!')
 
     try {
       const scopes = ['username', 'payments', 'wallet_address']
-      const auth = await window.Pi.authenticate(scopes, (payment) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const auth = await window.Pi.authenticate(scopes, (payment: any) => {
         console.log('💰 Pagamento incompleto:', payment)
       })
 
-      if (auth && auth.user) {
-        console.log('✅ Login OK:', auth)
-        localStorage.setItem('piUser', JSON.stringify(auth.user))
-        router.push('/payment')
-      } else {
-        console.error('❌ Login fallito')
-      }
+      console.log('✅ Login OK:', auth)
+      setUser(auth.user)
     } catch (err) {
       console.error('❌ Errore login:', err)
     }
   }
 
+  const handlePayment = async () => {
+    if (!window.Pi || !user) return
+
+    try {
+      const paymentData = {
+        amount: "1",
+        memo: "Pagamento test",
+        metadata: { type: "test" },
+        developerApproved: true,
+        developerCompleted: true
+      }
+
+      await window.Pi.createPayment(paymentData, {
+        onReadyForServerApproval: (paymentId: string) => {
+          console.log("🟡 Pronto per approvazione:", paymentId)
+        },
+        onReadyForServerCompletion: (paymentId: string, txid: string) => {
+          console.log("🟢 Completato:", paymentId, txid)
+        },
+        onCancel: (paymentId: string) => {
+          console.warn("🔴 Annullato:", paymentId)
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onError: (error: any) => {
+          console.error("❌ Errore pagamento:", error)
+        }
+      })
+    } catch (err) {
+      console.error("❌ Errore createPayment:", err)
+    }
+  }
+
   return (
     <div style={{ padding: 30 }}>
-      <h2>🎮 Login con Pi</h2>
-      <p>Accedi per continuare al pagamento</p>
-      <button
-        onClick={handleLogin}
-        disabled={!sdkReady}
-        style={{
-          padding: '10px 20px',
-          backgroundColor: '#4CAF50',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '16px',
-          cursor: sdkReady ? 'pointer' : 'not-allowed'
-        }}
-      >
-        Login con Pi
-      </button>
+      <h1>🎮 Pi Game</h1>
+
+      {!user ? (
+        <>
+          <p>Accedi con il tuo account Pi</p>
+          <button
+            onClick={handleLogin}
+            disabled={!sdkReady}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              backgroundColor: sdkReady ? '#4CAF50' : '#ccc',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: sdkReady ? 'pointer' : 'not-allowed'
+            }}
+          >
+            {sdkReady ? 'Login con Pi' : 'Inizializzo...'}
+          </button>
+        </>
+      ) : (
+        <>
+          <p>
+            Utente: <strong>{user.username}</strong><br />
+            Wallet: <strong>{user.wallet_address}</strong>
+          </p>
+          <button
+            onClick={handlePayment}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              backgroundColor: '#2196F3',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              marginTop: '20px'
+            }}
+          >
+            Invia 1 Pi (test)
+          </button>
+        </>
+      )}
     </div>
   )
 }
