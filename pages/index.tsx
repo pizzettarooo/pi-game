@@ -5,59 +5,58 @@ export default function Home() {
   const [user, setUser] = useState<{ username: string; wallet_address: string } | null>(null)
 
   useEffect(() => {
-    const loadPiSdk = async () => {
-      const scriptAlreadyExists = document.getElementById('pi-sdk')
-
-      const initPi = async () => {
-        if (window.Pi && window.Pi.init) {
-          try {
-            await window.Pi.init({
-              version: '2.0',
-              sandbox: true,
-              appId: 'test-accdbdb15ea84aac',
-            })
-            console.log('✅ Pi SDK inizializzato con successo')
-            setSdkReady(true)
-          } catch (err) {
-            console.error('❌ Errore init:', err)
-          }
-        } else {
-          console.error('❌ Pi non disponibile su window')
+    const initPiSdk = async () => {
+      if (window.Pi && window.Pi.init) {
+        try {
+          await window.Pi.init({
+            version: '2.0',
+            sandbox: true,
+            appId: 'test-accdbdb15ea84aac'
+          })
+          console.log('✅ Pi SDK inizializzato con successo')
+          setSdkReady(true)
+        } catch (err) {
+          console.error('❌ Errore init Pi SDK:', err)
         }
-      }
-
-      if (!scriptAlreadyExists) {
-        const script = document.createElement('script')
-        script.src = 'https://sdk.minepi.com/pi-sdk.js'
-        script.id = 'pi-sdk'
-        script.async = true
-        script.onload = initPi
-        document.body.appendChild(script)
       } else {
-        initPi()
+        console.error('❌ Pi SDK non disponibile su window')
       }
     }
 
-    loadPiSdk()
+    const loadPiScript = () => {
+      const script = document.createElement('script')
+      script.src = 'https://sdk.minepi.com/pi-sdk.js'
+      script.id = 'pi-sdk'
+      script.async = true
+      script.onload = initPiSdk
+      document.body.appendChild(script)
+    }
+
+    if (!document.getElementById('pi-sdk')) {
+      loadPiScript()
+    } else {
+      initPiSdk()
+    }
   }, [])
 
   const handleLogin = async () => {
-    if (!sdkReady) {
-      alert('⏳ Attendi... Pi SDK non pronto!')
-      return
-    }
+    if (!sdkReady) return alert('⏳ Attendi che il Pi SDK sia pronto...')
 
     try {
       const scopes = ['username', 'payments', 'wallet_address']
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const auth = await window.Pi.authenticate(scopes, (payment: any) => {
-        console.log('💰 Pagamento incompleto:', payment)
+        console.log('💰 Pagamento incompleto trovato:', payment)
       })
 
-      console.log('✅ Login OK:', auth)
-      setUser(auth.user)
+      if (auth?.user) {
+        setUser(auth.user)
+        console.log('✅ Login completato:', auth)
+      } else {
+        console.error('❌ Auth fallita:', auth)
+      }
     } catch (err) {
-      console.error('❌ Errore login:', err)
+      console.error('❌ Errore durante il login:', err)
     }
   }
 
@@ -67,10 +66,10 @@ export default function Home() {
     try {
       const paymentData = {
         amount: "1",
-        memo: "Pagamento test",
+        memo: "Test payment",
         metadata: { type: "test" },
         developerApproved: true,
-        developerCompleted: true,
+        developerCompleted: true
       }
 
       await window.Pi.createPayment(paymentData, {
@@ -106,7 +105,7 @@ export default function Home() {
             style={{
               padding: '10px 20px',
               fontSize: '16px',
-              backgroundColor: sdkReady ? '#4CAF50' : '#ccc',
+              backgroundColor: sdkReady ? '#4CAF50' : '#aaa',
               color: '#fff',
               border: 'none',
               borderRadius: '8px',
