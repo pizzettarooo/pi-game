@@ -57,7 +57,14 @@ export default function Home() {
 
       const auth = await window.Pi.authenticate(scopes, onIncompletePaymentFound)
       console.log('✅ Dati utente:', auth)
-      alert(`Ciao ${auth.user.username}, wallet: ${auth.user.wallet_address}`)
+
+      // Recupera il wallet manualmente se non presente
+      let wallet = auth.user.wallet_address
+      if (!wallet && window.Pi.getWalletAddress) {
+        wallet = await window.Pi.getWalletAddress()
+      }
+
+      alert(`Ciao ${auth.user.username}, wallet: ${wallet || 'non disponibile'}`)
     } catch (err) {
       console.error('❌ Errore durante il login:', err)
     }
