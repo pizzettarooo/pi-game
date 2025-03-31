@@ -1,23 +1,21 @@
 import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 
-export default function Home() {
+export default function LoginPage() {
   const [sdkReady, setSdkReady] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const loadPiSdk = async () => {
-      const scriptAlreadyExists = document.getElementById('pi-sdk')
-      if (!scriptAlreadyExists) {
+      if (!document.getElementById('pi-sdk')) {
         const script = document.createElement('script')
         script.src = 'https://sdk.minepi.com/pi-sdk.js'
         script.id = 'pi-sdk'
         script.async = true
-        script.onload = async () => {
-          console.log('✅ Pi SDK caricato')
-          await initPiSdk()
-        }
+        script.onload = initPiSdk
         document.body.appendChild(script)
       } else {
-        await initPiSdk()
+        initPiSdk()
       }
     }
 
@@ -28,13 +26,11 @@ export default function Home() {
             version: "2.0",
             appId: "test-accdbdb15ea84aac"
           })
-          console.log('✅ Pi SDK inizializzato con successo')
+          console.log('✅ Pi SDK inizializzato')
           setSdkReady(true)
         } catch (err) {
-          console.error('❌ Errore durante init:', err)
+          console.error('❌ Errore init Pi SDK:', err)
         }
-      } else {
-        console.error('❌ Pi SDK non trovato in window')
       }
     }
 
@@ -42,75 +38,28 @@ export default function Home() {
   }, [])
 
   const handleLogin = async () => {
-    if (!sdkReady) {
-      alert('⏳ Attendi... Pi SDK non pronto!')
-      return
-    }
+    if (!sdkReady) return alert('Pi SDK non pronto!')
 
     try {
       const scopes = ['username', 'payments', 'wallet_address']
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const onIncompletePaymentFound = (payment: any) => {
-        console.log('💰 Pagamento incompleto trovato:', payment)
+        console.log('💰 Pagamento incompleto:', payment)
       }
 
       const auth = await window.Pi.authenticate(scopes, onIncompletePaymentFound)
-      console.log('✅ Dati utente:', auth)
+      console.log('✅ Login OK:', auth)
 
-      // Recupera il wallet manualmente se non presente
-      let wallet = auth.user.wallet_address
-      if (!wallet && window.Pi.getWalletAddress) {
-        wallet = await window.Pi.getWalletAddress()
-      }
-
-      alert(`Ciao ${auth.user.username}, wallet: ${wallet || 'non disponibile'}`)
+      localStorage.setItem('piUser', JSON.stringify(auth.user))
+      router.push('/payment')
     } catch (err) {
-      console.error('❌ Errore durante il login:', err)
-    }
-  }
-
-  const handlePayment = async () => {
-    try {
-      const paymentData = {
-        amount: "1",
-        memo: "Test Payment",
-        metadata: { type: "test" }
-      }
-
-      const onReadyForServerApproval = (paymentId: string) => {
-        console.log("🟡 Pronto per approvazione:", paymentId)
-      }
-
-      const onReadyForServerCompletion = (paymentId: string, txid: string) => {
-        console.log("🟢 Pronto per completamento:", paymentId, txid)
-      }
-
-      const onCancel = (paymentId: string) => {
-        console.warn("🔴 Pagamento annullato:", paymentId)
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const onError = (error: any) => {
-        console.error("❌ Errore pagamento:", error)
-      }
-
-      await window.Pi.createPayment(paymentData, {
-        onReadyForServerApproval,
-        onReadyForServerCompletion,
-        onCancel,
-        onError,
-      })
-
-    } catch (err) {
-      console.error("❌ Errore createPayment:", err)
+      console.error('❌ Errore login:', err)
     }
   }
 
   return (
     <div style={{ padding: 30 }}>
-      <h1>🎮 Gioco Pi Network</h1>
-      <p>Accedi con il tuo account Pi per iniziare a giocare.</p>
-
+      <h1>🎮 Login con Pi</h1>
+      <p>Accedi per continuare al pagamento</p>
       <button
         onClick={handleLogin}
         disabled={!sdkReady}
@@ -121,29 +70,10 @@ export default function Home() {
           color: '#fff',
           border: 'none',
           borderRadius: '8px',
-          cursor: sdkReady ? 'pointer' : 'not-allowed',
-          marginBottom: '15px'
-        }}
-      >
-        {sdkReady ? 'Login con Pi' : 'Inizializzo...'}
-      </button>
-
-      <br />
-
-      <button
-        onClick={handlePayment}
-        disabled={!sdkReady}
-        style={{
-          padding: '10px 20px',
-          fontSize: '16px',
-          backgroundColor: '#2196F3',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '8px',
           cursor: sdkReady ? 'pointer' : 'not-allowed'
         }}
       >
-        Invia 1 Pi (test)
+        {sdkReady ? 'Login con Pi' : 'Inizializzo...'}
       </button>
     </div>
   )
