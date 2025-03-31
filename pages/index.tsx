@@ -95,6 +95,7 @@ export default function Home() {
       })
 
     } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       console.error("❌ Errore createPayment:", err)
     }
   }
