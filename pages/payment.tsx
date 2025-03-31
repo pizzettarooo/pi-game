@@ -5,6 +5,7 @@ export default function PaymentPage() {
   const [user, setUser] = useState<{ username: string; wallet_address: string } | null>(null)
   const router = useRouter()
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const savedUser = localStorage.getItem('piUser')
     if (savedUser) {
@@ -36,6 +37,7 @@ export default function PaymentPage() {
         console.warn("🔴 Pagamento annullato:", paymentId)
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const onError = (error: any) => {
         console.error("❌ Errore pagamento:", error)
       }

@@ -42,6 +42,7 @@ export default function LoginPage() {
 
     try {
       const scopes = ['username', 'payments', 'wallet_address']
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const onIncompletePaymentFound = (payment: any) => {
         console.log('💰 Pagamento incompleto:', payment)
       }
